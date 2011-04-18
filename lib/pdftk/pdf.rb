@@ -45,6 +45,45 @@ module Pdftk
       end
       @_all_fields
     end
-  end
 
+    def dump_data
+      dumped_data = `pdftk "#{path}" dump_data`
+      hash_meta_data(dumped_data)
+    end
+
+    def update_data(metadata, output_pdf)
+      new_metadata = hash_to_meta_data(metadata)
+      opertation_output = `echo "#{new_metadata}" | pdftk "#{path}" update_info - output #{output_pdf}`
+    end
+
+    private
+
+    def hash_to_meta_data(metadata_hash)
+      output = String.new
+
+      metadata_hash.each{|key,value|
+        output << "InfoKey: #{key}\n"
+        output << "InfoValue: #{value}\n"
+      }
+      output
+    end
+
+    def hash_meta_data(metadata)
+      mdh = {}
+      key = ''
+      metadata.each_line{|line|
+        if line =~ /InfoKey/
+          key  = line.split(":")[1].strip
+        elsif line =~ /InfoValue/
+          value = line.split(":")[1].strip
+          mdh.merge!({key => value})
+        else
+          split_line = line.split(":")
+          mdh.merge!({split_line[0].strip => split_line[1].strip})
+        end
+      }
+      mdh
+    end
+
+  end
 end
